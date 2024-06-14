@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src",
+  "."
+]
+
+[project]
+name = "everai-builtin-autoscaler"
+version = "0.1.5"
+#dynamic = ["version"]
+description = "simple auto scaler for everai"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["expvent", "ever", "everai", "ai", "inference", "serveless", "autoscaling", "autoscaler", "simple"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Topic :: Software Development :: Build Tools",
+  "Programming Language :: Python :: 3.10",
+]
+authors = [
+  {name = "mc", email = "mc@expvent.com"}
+]
+maintainers = [
+  {name = "mc", email = "mc@expvent.com"}
+]
+requires-python = ">= 3.10"
+dependencies = [
+  "everai-autoscaler~=0.1.5",
+]
+
+
+[project.optional-dependencies]
+dev = [
+  "pytest~=8.0.2",
+  "pytest-cov~=4.1.0",
+
+]
+build = [
+  "build~=1.2.1",
+  "wheel~=0.41.2",
+  "twine~=5.0.0",
+]
+
+[project.urls]
+Homepage = "https://everai.expvent.com"
+Documentation = "https://everai.expvent.com"
+Repository = "https://github.com/everai-autoscaler/simple"
+Issues = "https://github.com/everai-autoscaler/simple/issues"
+Changelog = "https://github.com/everai-autoscaler/simple/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+#[tool.setuptools.dynamic]
+#version = {attr = "everai.__version__"}
