@@ -10,12 +10,12 @@ pythonpath = [
 
 [project]
 name = "everai-builtin-autoscaler"
-version = "0.1.5"
+version = "0.1.23"
 #dynamic = ["version"]
-description = "simple auto scaler for everai"
+description = "everai built in auto scaler"
 readme = "README.md"
 license = {file = "LICENSE"}
-keywords = ["expvent", "ever", "everai", "ai", "inference", "serveless", "autoscaling", "autoscaler", "simple"]
+keywords = ["expvent", "ever", "everai", "ai", "inference", "serveless", "autoscaling", "autoscaler", "builtin"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Topic :: Software Development :: Build Tools",
@@ -29,7 +29,7 @@ maintainers = [
 ]
 requires-python = ">= 3.10"
 dependencies = [
-  "everai-autoscaler~=0.1.5",
+  "everai-autoscaler~=0.1.11",
 ]
 
 
@@ -45,15 +45,22 @@ build = [
   "twine~=5.0.0",
 ]
 
+[project.scripts]
+everai-autoscaler-builtin = "everai_autoscaler.builtin.cli.commands.main:main"
+
 [project.urls]
 Homepage = "https://everai.expvent.com"
 Documentation = "https://everai.expvent.com"
-Repository = "https://github.com/everai-autoscaler/simple"
-Issues = "https://github.com/everai-autoscaler/simple/issues"
-Changelog = "https://github.com/everai-autoscaler/simple/blob/main/CHANGELOG.md"
+Repository = "https://github.com/everai-autoscaler/builtin"
+Issues = "https://github.com/everai-autoscaler/builtin/issues"
+Changelog = "https://github.com/everai-autoscaler/builtin/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
+[tool.setuptools.packages.find]
+where = ["src/"]
+include = ["everai_autoscaler.builtin", "everai_autoscaler.builtin/*"]
+
 #[tool.setuptools.dynamic]
-#version = {attr = "everai.__version__"}
+#version = {attr = "everai_autoscaler.builtin.version.__version__"}

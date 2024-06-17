@@ -1,8 +1,9 @@
+from __future__ import annotations
 from datetime import datetime
 
 import typing
-from everai_autoscaler import (
-    Action,
+
+from everai_autoscaler.model import (
     BuiltinAutoScaler,
     Factors,
     QueueReason,
@@ -12,10 +13,6 @@ from everai_autoscaler import (
     DecideResult,
     ArgumentType,
 )
-#
-# T = typing.TypeVar('T', int, float, str)
-#
-# ArgumentType = typing.Union[T, typing.Callable[[], T]]
 
 
 class SimpleAutoScaler(BuiltinAutoScaler):
@@ -37,11 +34,11 @@ class SimpleAutoScaler(BuiltinAutoScaler):
                  max_idle_time: ArgumentType = 120,
                  scale_up_step: ArgumentType = 1):
 
-        self.min_workers = min_workers
-        self.max_workers = max_workers
-        self.max_queue_size = max_queue_size
-        self.max_idle_time = max_idle_time
-        self.scale_up_step = scale_up_step
+        self.min_workers = min_workers if callable(min_workers) else int(min_workers)
+        self.max_workers = max_workers if callable(max_workers) else int(max_workers)
+        self.max_queue_size = max_queue_size if callable(max_queue_size) else int(max_queue_size)
+        self.max_idle_time = max_idle_time if callable(max_idle_time) else int(max_idle_time)
+        self.scale_up_step = scale_up_step if callable(scale_up_step) else int(scale_up_step)
 
     @classmethod
     def scheduler_name(cls) -> str:
@@ -51,14 +48,9 @@ class SimpleAutoScaler(BuiltinAutoScaler):
     def autoscaler_name(cls) -> str:
         return 'simple'
 
-    def autoscaler_arguments(self) -> typing.Dict[str, ArgumentType]:
-        return dict(
-            min_workers=self.min_workers,
-            max_workers=self.max_workers,
-            max_queue_size=self.max_queue_size,
-            max_idle_time=self.max_idle_time,
-            scale_up_step=self.scale_up_step,
-        )
+    @classmethod
+    def from_arguments(cls, arguments: typing.Dict[str, str]) -> SimpleAutoScaler:
+        return SimpleAutoScaler(**arguments)
 
     def get_argument(self, name: str) -> int:
         assert hasattr(self, name)
@@ -118,7 +110,7 @@ class SimpleAutoScaler(BuiltinAutoScaler):
         # ensure after scale down, satisfied the max_workers
         max_scale_up_count = max_workers - len(factors.workers)
         scale_up_count = 0
-        if SimpleAutoScalingPolicy.should_scale_up(factors, max_queue_size):
+        if SimpleAutoScaler.should_scale_up(factors, max_queue_size):
             scale_up_count = min(max_scale_up_count, scale_up_step)
 
         if scale_up_count > 0:
