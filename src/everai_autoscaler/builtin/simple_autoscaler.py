@@ -52,6 +52,15 @@ class SimpleAutoScaler(BuiltinAutoScaler):
     def from_arguments(cls, arguments: typing.Dict[str, str]) -> SimpleAutoScaler:
         return SimpleAutoScaler(**arguments)
 
+    def autoscaler_arguments(self) -> typing.Dict[str, ArgumentType]:
+        return dict(
+            min_workers=self.min_workers,
+            max_workers=self.max_workers,
+            max_queue_size=self.max_queue_size,
+            max_idle_time=self.max_idle_time,
+            scale_up_step=self.scale_up_step,
+        )
+
     def get_argument(self, name: str) -> int:
         assert hasattr(self, name)
         prop = getattr(self, name)
