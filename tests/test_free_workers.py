@@ -2,10 +2,10 @@ import datetime
 import unittest
 
 from everai_autoscaler.model import AutoScaler, BuiltinAutoScaler, Factors, ScaleUpAction, QueueReason, ScaleDownAction
-from everai_autoscaler.model.factors import WorkerStatus
-from .test_utils import make_worker
+from everai_autoscaler.model.factors import  WorkerStatus
 
-from everai_autoscaler.builtin import SimpleAutoScaler
+from everai_autoscaler.builtin import FreeWorkerAutoScaler
+from .test_utils import make_worker
 
 
 def f(a: AutoScaler):
@@ -18,7 +18,7 @@ def f2(b: BuiltinAutoScaler):
 
 class TestSimple(unittest.TestCase):
     def test_simple(self):
-        s: BuiltinAutoScaler = SimpleAutoScaler()
+        s: BuiltinAutoScaler = FreeWorkerAutoScaler()
         f(s)
 
         s.decide(Factors(
@@ -27,7 +27,7 @@ class TestSimple(unittest.TestCase):
         ))
 
     def test_initial_scaleup(self):
-        s: BuiltinAutoScaler = SimpleAutoScaler(
+        s: BuiltinAutoScaler = FreeWorkerAutoScaler(
             scale_up_step=2,
             max_workers=3,
         )
@@ -38,14 +38,16 @@ class TestSimple(unittest.TestCase):
         self.assertEqual(1, len(result.actions))
         self.assertIsInstance(result.actions[0], ScaleUpAction)
         self.assertEqual(1, result.actions[0].count)
+
     def test_scaleup(self):
-        s: BuiltinAutoScaler = SimpleAutoScaler(
+        s: BuiltinAutoScaler = FreeWorkerAutoScaler(
             scale_up_step=2,
+            min_free_workers=1,
             max_workers=3,
         )
         result = s.decide(Factors(
             queue={
-                QueueReason.QueueDueBusy: 3,
+                QueueReason.QueueDueBusy: 0,
                 QueueReason.NotDispatch: 0,
                 QueueReason.QueueDueSession: 0,
             },
@@ -58,13 +60,13 @@ class TestSimple(unittest.TestCase):
         self.assertEqual(2, result.actions[0].count)
 
     def test_scaleup_max_workers_limit(self):
-        s: BuiltinAutoScaler = SimpleAutoScaler(
+        s: BuiltinAutoScaler = FreeWorkerAutoScaler(
             scale_up_step=2,
             max_workers=3,
         )
         result = s.decide(Factors(
             queue={
-                QueueReason.QueueDueBusy: 3,
+                QueueReason.QueueDueBusy: 0,
                 QueueReason.NotDispatch: 0,
                 QueueReason.QueueDueSession: 0,
             },
@@ -78,7 +80,7 @@ class TestSimple(unittest.TestCase):
         self.assertEqual(1, result.actions[0].count)
 
     def test_scaleup_max_workers_arrived(self):
-        s: BuiltinAutoScaler = SimpleAutoScaler(
+        s: BuiltinAutoScaler = FreeWorkerAutoScaler(
             scale_up_step=2,
             max_workers=3,
         )
@@ -97,7 +99,7 @@ class TestSimple(unittest.TestCase):
         self.assertEqual(0, len(result.actions))
 
     def test_scaledown(self):
-        s: BuiltinAutoScaler = SimpleAutoScaler(
+        s: BuiltinAutoScaler = FreeWorkerAutoScaler(
             scale_up_step=2,
             max_workers=3,
         )

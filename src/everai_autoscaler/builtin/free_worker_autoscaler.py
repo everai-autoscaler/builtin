@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import datetime
-
+from .builtin_autoscaler_helper import BuiltinAutoscalerHelper
 import typing
 
 from everai_autoscaler.model import (
@@ -15,13 +15,13 @@ from everai_autoscaler.model import (
 )
 
 
-class SimpleAutoScaler(BuiltinAutoScaler):
+class FreeWorkerAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
     # The minimum number of worker, even all of those are idle
     min_workers: ArgumentType
     # The maximum number of worker, even there are some request in queued_request.py
     max_workers: ArgumentType
-    # The max_queue_size let scheduler know it's time to scale up
-    max_queue_size: ArgumentType
+    # The min free workers let scheduler know it's time to scale up
+    min_free_workers: ArgumentType
     # The quantity of each scale up
     scale_up_step: ArgumentType
     # The max_idle_time in seconds let scheduler witch worker should be scale down
@@ -30,13 +30,13 @@ class SimpleAutoScaler(BuiltinAutoScaler):
     def __init__(self,
                  min_workers: ArgumentType = 1,
                  max_workers: ArgumentType = 1,
-                 max_queue_size: ArgumentType = 1,
+                 min_free_workers: ArgumentType = 1,
                  max_idle_time: ArgumentType = 120,
                  scale_up_step: ArgumentType = 1):
 
         self.min_workers = min_workers if callable(min_workers) else int(min_workers)
         self.max_workers = max_workers if callable(max_workers) else int(max_workers)
-        self.max_queue_size = max_queue_size if callable(max_queue_size) else int(max_queue_size)
+        self.min_free_workers = min_free_workers if callable(min_free_workers) else int(min_free_workers)
         self.max_idle_time = max_idle_time if callable(max_idle_time) else int(max_idle_time)
         self.scale_up_step = scale_up_step if callable(scale_up_step) else int(scale_up_step)
 
@@ -46,47 +46,27 @@ class SimpleAutoScaler(BuiltinAutoScaler):
 
     @classmethod
     def autoscaler_name(cls) -> str:
-        return 'simple'
+        return 'free-worker'
 
     @classmethod
-    def from_arguments(cls, arguments: typing.Dict[str, str]) -> SimpleAutoScaler:
-        return SimpleAutoScaler(**arguments)
+    def from_arguments(cls, arguments: typing.Dict[str, str]) -> FreeWorkerAutoScaler:
+        return FreeWorkerAutoScaler(**arguments)
 
     def autoscaler_arguments(self) -> typing.Dict[str, ArgumentType]:
-        return dict(
-            min_workers=self.min_workers,
-            max_workers=self.max_workers,
-            max_queue_size=self.max_queue_size,
-            max_idle_time=self.max_idle_time,
-            scale_up_step=self.scale_up_step,
+        return self.autoscaler_arguments_helper(
+            [
+                'min_workers', 'max_workers', 'min_free_workers', 'max_idle_time', 'scale_up_step'
+            ]
         )
 
-    def get_argument(self, name: str) -> int:
-        assert hasattr(self, name)
-        prop = getattr(self, name)
-
-        if callable(prop):
-            return int(prop())
-        elif isinstance(prop, int):
-            return prop
-        elif isinstance(prop, float):
-            return int(prop)
-        elif isinstance(prop, str):
-            return int(prop)
-        else:
-            raise TypeError(f'Invalid argument type {type(prop)} for {name}')
-
     def get_arguments(self) -> typing.Tuple[int, int, int, int, int]:
-        min_workers = self.get_argument('min_workers')
-        max_workers = self.get_argument('max_workers')
-        max_queue_size = self.get_argument('max_queue_size')
-        max_idle_time = self.get_argument('max_idle_time')
-        scale_up_step = self.get_argument('scale_up_step')
-
-        return min_workers, max_workers, max_queue_size, max_idle_time, scale_up_step
+        result = self.get_arguments_value_helper([
+            'min_workers', 'max_workers', 'min_free_workers', 'max_idle_time', 'scale_up_step'
+        ])
+        return result[0], result[1], result[2], result[3], result[4]
 
     @staticmethod
-    def should_scale_up(factors: Factors, max_queue_size: int) -> bool:
+    def should_scale_up(factors: Factors, min_free_workers: int) -> bool:
         busy_count = 0
 
         # don't do scale up again
@@ -94,15 +74,19 @@ class SimpleAutoScaler(BuiltinAutoScaler):
         if len(in_flights) > 0:
             return False
 
-        busy_count = factors.queue.get(QueueReason.QueueDueBusy, None) or 0
-        return busy_count > max_queue_size
+        free_workers_count = 0
+        for worker in factors.workers:
+            if worker.status == WorkerStatus.Free:
+                free_workers_count += 1
+
+        return free_workers_count < min_free_workers
 
     def decide(self, factors: Factors) -> DecideResult:
         assert factors.queue is not None
 
-        min_workers, max_workers, max_queue_size, max_idle_time, scale_up_step = self.get_arguments()
+        min_workers, max_workers, min_free_workers, max_idle_time, scale_up_step = self.get_arguments()
         print(f'min_workers: {min_workers}, max_workers: {max_workers}, '
-              f'max_queue_size: {max_queue_size}, max_idle_time: {max_idle_time}, scale_up_step: {scale_up_step}')
+              f'min_free_workers: {min_free_workers}, max_idle_time: {max_idle_time}, scale_up_step: {scale_up_step}')
 
         now = int(datetime.now().timestamp())
         # scale up to min_workers
@@ -113,10 +97,10 @@ class SimpleAutoScaler(BuiltinAutoScaler):
                 actions=[ScaleUpAction(count=min_workers - len(factors.workers))],
             )
 
-        # ensure after scale up, satisfied the max_workers
+        # ensure after scale down, satisfied the max_workers
         max_scale_up_count = max_workers - len(factors.workers)
         scale_up_count = 0
-        if SimpleAutoScaler.should_scale_up(factors, max_queue_size):
+        if FreeWorkerAutoScaler.should_scale_up(factors, min_free_workers):
             scale_up_count = min(max_scale_up_count, scale_up_step)
 
         if scale_up_count > 0:
