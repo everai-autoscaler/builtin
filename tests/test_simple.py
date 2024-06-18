@@ -20,11 +20,12 @@ class TestSimple(unittest.TestCase):
     def test_simple(self):
         s: BuiltinAutoScaler = SimpleAutoScaler()
         f(s)
-
-        s.decide(Factors(
+        factors = Factors(
             queue=dict(),
             workers=[]
-        ))
+        )
+
+        print(factors.json())
 
     def test_initial_scaleup(self):
         s: BuiltinAutoScaler = SimpleAutoScaler(
@@ -38,6 +39,7 @@ class TestSimple(unittest.TestCase):
         self.assertEqual(1, len(result.actions))
         self.assertIsInstance(result.actions[0], ScaleUpAction)
         self.assertEqual(1, result.actions[0].count)
+
     def test_scaleup(self):
         s: BuiltinAutoScaler = SimpleAutoScaler(
             scale_up_step=2,

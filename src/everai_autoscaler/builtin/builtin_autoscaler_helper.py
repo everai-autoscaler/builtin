@@ -1,6 +1,7 @@
 import typing
+from datetime import datetime
 
-from everai_autoscaler.model import ArgumentType
+from everai_autoscaler.model import ArgumentType, Factors, WorkerStatus, ScaleDownAction, DecideResult
 
 
 class BuiltinAutoscalerHelper:
@@ -29,3 +30,32 @@ class BuiltinAutoscalerHelper:
 
     def autoscaler_arguments_helper(self, names: typing.List[str]) -> typing.Dict[str, ArgumentType]:
         return {k: v for k, v in zip(names, [self.get_argument_helper(n) for n in names])}
+
+    @classmethod
+    def idle_time_scaledown_helper(
+            cls,
+            factors: Factors,
+            min_workers: int,
+            max_workers: int,
+            max_idle_time: int) -> DecideResult:
+        now = int(datetime.now().timestamp())
+        # check if scale down is necessary
+        scale_down_actions = []
+        factors.workers.sort(key=lambda x: x.started_at, reverse=True)
+        for worker in factors.workers:
+            if (worker.number_of_sessions == 0 and worker.status == WorkerStatus.Free and
+                    now - worker.last_service_time >= max_idle_time):
+                scale_down_actions.append(ScaleDownAction(worker_id=worker.worker_id))
+
+        running_workers = 0
+        for worker in factors.workers:
+            if worker.status == WorkerStatus.Free:
+                running_workers += 1
+
+        # ensure after scale down, satisfied the min_workers
+        max_scale_down_count = running_workers - min_workers
+        scale_down_count = min(max_scale_down_count, len(scale_down_actions))
+        return DecideResult(
+            max_workers=max_workers,
+            actions=scale_down_actions[:scale_down_count]
+        )

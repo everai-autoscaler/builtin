@@ -33,7 +33,6 @@ class FreeWorkerAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
                  min_free_workers: ArgumentType = 1,
                  max_idle_time: ArgumentType = 120,
                  scale_up_step: ArgumentType = 1):
-
         self.min_workers = min_workers if callable(min_workers) else int(min_workers)
         self.max_workers = max_workers if callable(max_workers) else int(max_workers)
         self.min_free_workers = min_free_workers if callable(min_free_workers) else int(min_free_workers)
@@ -97,7 +96,7 @@ class FreeWorkerAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
                 actions=[ScaleUpAction(count=min_workers - len(factors.workers))],
             )
 
-        # ensure after scale down, satisfied the max_workers
+        # ensure after scale up, satisfied the max_workers
         max_scale_up_count = max_workers - len(factors.workers)
         scale_up_count = 0
         if FreeWorkerAutoScaler.should_scale_up(factors, min_free_workers):
@@ -109,23 +108,9 @@ class FreeWorkerAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
                 actions=[ScaleUpAction(count=scale_up_count)],
             )
 
-        # check if scale down is necessary
-        scale_down_actions = []
-        factors.workers.sort(key=lambda x: x.started_at, reverse=True)
-        for worker in factors.workers:
-            if (worker.number_of_sessions == 0 and worker.status == WorkerStatus.Free and
-                    now - worker.last_service_time >= max_idle_time):
-                scale_down_actions.append(ScaleDownAction(worker_id=worker.worker_id))
-
-        running_workers = 0
-        for worker in factors.workers:
-            if worker.status == WorkerStatus.Free:
-                running_workers += 1
-
-        # ensure after scale down, satisfied the min_workers
-        max_scale_down_count = running_workers - min_workers
-        scale_down_count = min(max_scale_down_count, len(scale_down_actions))
-        return DecideResult(
+        return self.idle_time_scaledown_helper(
+            factors=factors,
+            min_workers=min_workers,
             max_workers=max_workers,
-            actions=scale_down_actions[:scale_down_count]
+            max_idle_time=max_idle_time,
         )
