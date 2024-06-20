@@ -5,7 +5,7 @@ from .free_worker_autoscaler import FreeWorkerAutoScaler
 from everai_autoscaler.builtin.factory import Factory, Singleton
 from everai_autoscaler.model import BuiltinAutoScaler
 
-__version__ = "0.1.39"
+__version__ = "0.1.41"
 
 T = typing.TypeVar('T', bound=BuiltinAutoScaler)
 
@@ -22,7 +22,7 @@ __all__ = [
     'SimpleAutoScaler',
     'FreeWorkerAutoScaler',
     'BuiltinFactory',
-    '__version__'
+    '__version__',
 ]
 
 

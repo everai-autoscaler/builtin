@@ -11,7 +11,7 @@ from everai_autoscaler.model import (
     ScaleUpAction,
     ScaleDownAction,
     DecideResult,
-    ArgumentType,
+    ArgumentType, Decorators,
 )
 
 from .builtin_autoscaler_helper import BuiltinAutoscalerHelper
@@ -29,18 +29,23 @@ class SimpleAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
     # The max_idle_time in seconds let scheduler witch worker should be scale down
     max_idle_time: ArgumentType
 
+    decorators: typing.Optional[Decorators] = None,
+
     def __init__(self,
                  min_workers: ArgumentType = 1,
                  max_workers: ArgumentType = 1,
                  max_queue_size: ArgumentType = 1,
                  max_idle_time: ArgumentType = 120,
-                 scale_up_step: ArgumentType = 1):
+                 scale_up_step: ArgumentType = 1,
+                 decorators: typing.Optional[Decorators] = None,
+                 ):
 
         self.min_workers = min_workers if callable(min_workers) else int(min_workers)
         self.max_workers = max_workers if callable(max_workers) else int(max_workers)
         self.max_queue_size = max_queue_size if callable(max_queue_size) else int(max_queue_size)
         self.max_idle_time = max_idle_time if callable(max_idle_time) else int(max_idle_time)
         self.scale_up_step = scale_up_step if callable(scale_up_step) else int(scale_up_step)
+        self.decorators = decorators
 
     @classmethod
     def scheduler_name(cls) -> str:
