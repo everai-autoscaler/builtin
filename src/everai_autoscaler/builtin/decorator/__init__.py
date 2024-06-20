@@ -1,9 +1,2 @@
-from .decorator import FactorsDecorator
-from .average import AverageDecorator
-from .noop import NoopDecorator
-
-__all__ = [
-    'FactorsDecorator',
-    'NoopDecorator',
-    'AverageDecorator',
-]
+import everai_autoscaler.builtin.decorator.factors
+import everai_autoscaler.builtin.decorator.arguments

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import typing
 
 from everai_autoscaler.model import Factors, Queue, QueueReason
@@ -16,6 +17,14 @@ class AverageDecorator:
         it will return None, and AutoScaler will ignore this decision
         """
         self.used_histories = int(used_histories)
+
+    @classmethod
+    def name(cls) -> str:
+        return 'average'
+
+    @classmethod
+    def from_arguments(cls, arguments: typing.Dict[str, str]) -> AverageDecorator:
+        return AverageDecorator(**arguments)
 
     def __call__(self, factors: Factors) -> typing.Optional[Factors]:
         if len(factors.queue_histories) < self.used_histories:
