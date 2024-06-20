@@ -49,7 +49,7 @@ class TimeMatchDecorator:
             self.tz = pytz.utc if timezone is None else pytz.timezone(timezone)
         except ZoneInfoNotFoundError:
             logging.warning(f'invalid time zone `{timezone}`, use utc')
-            self.tz = datetime.timezone.utc
+            self.tz = pytz.utc
 
         self.matchers = []
 
@@ -70,8 +70,11 @@ class TimeMatchDecorator:
 
         self.data = {k: str(v) for k, v in kwargs.items()}
 
+    def now(self) -> datetime.datetime:
+        return datetime.datetime.utcnow().replace(tzinfo=pytz.utc).astimezone(self.tz)
+
     def __call__(self, arguments: typing.Dict[str, str], mock_now: typing.Optional[datetime.datetime] = None) -> typing.Dict[str, str]:
-        real_now = datetime.datetime.utcnow().astimezone(self.tz)
+        real_now = self.now()
         now = mock_now if mock_now is not None else real_now
 
         result = arguments.copy()
