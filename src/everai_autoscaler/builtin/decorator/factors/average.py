@@ -40,9 +40,13 @@ class AverageDecorator:
         }
         result_queue.update(factors.queue)
 
+        used = 0
         for _, h in sorted(factors.queue_histories.items(), key=lambda item: item[0]):
             for reason, count in h.items():
                 result_queue[reason] += count
+            used += 1
+            if used >= self.used_histories:
+                break
 
         result_queue[QueueReason.NotDispatch] = int(result_queue[QueueReason.NotDispatch] / (self.used_histories + 1))
         result_queue[QueueReason.QueueDueBusy] = int(result_queue[QueueReason.QueueDueBusy] / (self.used_histories + 1))

@@ -45,6 +45,11 @@ class TestDecorator(unittest.TestCase):
     def test_average(self):
         factors = Factors(
             queue_histories={
+                30: {
+                    QueueReason.QueueDueBusy: 9,
+                    QueueReason.QueueDueSession: 9,
+                    QueueReason.NotDispatch: 9,
+                },
                 10: {
                     QueueReason.QueueDueBusy: 1,
                     QueueReason.QueueDueSession: 2,
