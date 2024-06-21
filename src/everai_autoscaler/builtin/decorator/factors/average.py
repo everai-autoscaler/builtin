@@ -27,8 +27,12 @@ class AverageDecorator:
         return AverageDecorator(**arguments)
 
     def __call__(self, factors: Factors) -> typing.Optional[Factors]:
+        if factors is None:
+            return None
+
         if len(factors.queue_histories) < self.used_histories:
             return None
+
         result_queue = {
             QueueReason.NotDispatch: 0,
             QueueReason.QueueDueBusy: 0,

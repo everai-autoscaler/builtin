@@ -1,6 +1,6 @@
-from everai_autoscaler.builtin.decorator.factors.decorator import FactorsDecorator
-from everai_autoscaler.builtin.decorator.factors.average import AverageDecorator
-from everai_autoscaler.builtin.decorator.factors.noop import NoopDecorator
+from .decorator import FactorsDecorator
+from .average import AverageDecorator
+from .noop import NoopDecorator
 from everai_autoscaler.builtin.factory import Factory, Singleton
 
 
