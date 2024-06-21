@@ -1,7 +1,7 @@
 import typing
 from datetime import datetime
 
-from everai_autoscaler.model import ArgumentType, Factors, WorkerStatus, ScaleDownAction, DecideResult
+from everai_autoscaler.model import ArgumentType, Factors, WorkerStatus, ScaleDownAction, DecideResult, ScaleUpAction
 
 
 class BuiltinAutoscalerHelper:
@@ -30,6 +30,44 @@ class BuiltinAutoscalerHelper:
 
     def autoscaler_arguments_helper(self, names: typing.List[str]) -> typing.Dict[str, ArgumentType]:
         return {k: v for k, v in zip(names, [self.get_argument_helper(n) for n in names])}
+
+    @classmethod
+    def general_scale_up_helper(cls,
+                                factors: Factors,
+                                min_workers: int,
+                                max_workers: int,
+                                scale_up_step: int,
+                                key_argument: int
+                                ) -> typing.Optional[DecideResult]:
+        if factors is None:
+            return DecideResult(
+                max_workers=max_workers,
+                actions=[],
+            )
+        now = int(datetime.now().timestamp())
+        # scale up to min_workers
+        if len(factors.workers) < min_workers:
+            print(f'workers {len(factors.workers)} less than min_workers {min_workers}')
+            return DecideResult(
+                max_workers=max_workers,
+                actions=[ScaleUpAction(count=min_workers - len(factors.workers))],
+            )
+
+        max_scale_up_count = max_workers - len(factors.workers)
+        scale_up_count = 0
+        assert hasattr(cls, 'should_scale_up')
+        should_scale_up = getattr(cls, 'should_scale_up')
+        assert callable(should_scale_up)
+
+        if should_scale_up(factors, key_argument):
+            scale_up_count = min(max_scale_up_count, scale_up_step)
+
+        if scale_up_count > 0:
+            return DecideResult(
+                max_workers=max_workers,
+                actions=[ScaleUpAction(count=scale_up_count)],
+            )
+        return None
 
     @classmethod
     def idle_time_scaledown_helper(

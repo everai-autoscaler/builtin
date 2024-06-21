@@ -71,47 +71,31 @@ class FreeWorkerAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
 
     @staticmethod
     def should_scale_up(factors: Factors, min_free_workers: int) -> bool:
-        busy_count = 0
+        workers = factors.workers if factors and factors.workers else []
 
         # don't do scale up again
-        in_flights = [worker for worker in factors.workers if worker.status == WorkerStatus.Inflight]
+        in_flights = [worker for worker in workers if worker.status == WorkerStatus.Inflight]
         if len(in_flights) > 0:
             return False
 
         free_workers_count = 0
-        for worker in factors.workers:
+        for worker in workers:
             if worker.status == WorkerStatus.Free:
                 free_workers_count += 1
 
         return free_workers_count < min_free_workers
 
     def decide(self, factors: Factors) -> DecideResult:
-        assert factors.queue is not None
-
         min_workers, max_workers, min_free_workers, max_idle_time, scale_up_step = self.get_arguments()
         print(f'min_workers: {min_workers}, max_workers: {max_workers}, '
               f'min_free_workers: {min_free_workers}, max_idle_time: {max_idle_time}, scale_up_step: {scale_up_step}')
 
-        now = int(datetime.now().timestamp())
-        # scale up to min_workers
-        if len(factors.workers) < min_workers:
-            print(f'workers {len(factors.workers)} less than min_workers {min_workers}')
-            return DecideResult(
-                max_workers=max_workers,
-                actions=[ScaleUpAction(count=min_workers - len(factors.workers))],
-            )
-
-        # ensure after scale up, satisfied the max_workers
-        max_scale_up_count = max_workers - len(factors.workers)
-        scale_up_count = 0
-        if FreeWorkerAutoScaler.should_scale_up(factors, min_free_workers):
-            scale_up_count = min(max_scale_up_count, scale_up_step)
-
-        if scale_up_count > 0:
-            return DecideResult(
-                max_workers=max_workers,
-                actions=[ScaleUpAction(count=scale_up_count)],
-            )
+        result = FreeWorkerAutoScaler.general_scale_up_helper(
+            factors=factors, min_workers=min_workers, max_workers=max_workers, scale_up_step=scale_up_step,
+            key_argument=min_free_workers,
+        )
+        if result:
+            return result
 
         return self.idle_time_scaledown_helper(
             factors=factors,

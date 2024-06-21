@@ -81,36 +81,21 @@ class SimpleAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
         if len(in_flights) > 0:
             return False
 
-        busy_count = factors.queue.get(QueueReason.QueueDueBusy, None) or 0
+        queue = factors.queue if factors is not None and factors.queue is not None else {}
+        busy_count = queue.get(QueueReason.QueueDueBusy, None) or 0
         return busy_count > max_queue_size
 
     def decide(self, factors: Factors) -> DecideResult:
-        assert factors.queue is not None
-
         min_workers, max_workers, max_queue_size, max_idle_time, scale_up_step = self.get_arguments()
         print(f'min_workers: {min_workers}, max_workers: {max_workers}, '
               f'max_queue_size: {max_queue_size}, max_idle_time: {max_idle_time}, scale_up_step: {scale_up_step}')
 
-        now = int(datetime.now().timestamp())
-        # scale up to min_workers
-        if len(factors.workers) < min_workers:
-            print(f'workers {len(factors.workers)} less than min_workers {min_workers}')
-            return DecideResult(
-                max_workers=max_workers,
-                actions=[ScaleUpAction(count=min_workers - len(factors.workers))],
-            )
-
-        # ensure after scale up, satisfied the max_workers
-        max_scale_up_count = max_workers - len(factors.workers)
-        scale_up_count = 0
-        if SimpleAutoScaler.should_scale_up(factors, max_queue_size):
-            scale_up_count = min(max_scale_up_count, scale_up_step)
-
-        if scale_up_count > 0:
-            return DecideResult(
-                max_workers=max_workers,
-                actions=[ScaleUpAction(count=scale_up_count)],
-            )
+        result = SimpleAutoScaler.general_scale_up_helper(
+            factors=factors, min_workers=min_workers, max_workers=max_workers, scale_up_step=scale_up_step,
+            key_argument=max_queue_size,
+        )
+        if result:
+            return result
 
         return self.idle_time_scaledown_helper(
             factors=factors,
