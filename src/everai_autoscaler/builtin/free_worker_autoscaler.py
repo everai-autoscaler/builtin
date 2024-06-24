@@ -37,6 +37,12 @@ class FreeWorkerAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
                  scale_up_step: ArgumentType = 1,
                  decorators: typing.Optional[Decorators] = None,
                  ):
+        assert min_workers >= 0
+        assert max_workers >= min_workers
+        assert min_free_workers >= 0
+        assert max_idle_time > 0
+        assert scale_up_step > 0
+
         self.min_workers = min_workers if callable(min_workers) else int(min_workers)
         self.max_workers = max_workers if callable(max_workers) else int(max_workers)
         self.min_free_workers = min_free_workers if callable(min_free_workers) else int(min_free_workers)
@@ -71,17 +77,17 @@ class FreeWorkerAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
 
     @staticmethod
     def should_scale_up(factors: Factors, min_free_workers: int) -> bool:
-        workers = factors.workers if factors and factors.workers else []
+        workers = factors.workers or []
+
+        if factors is None or factors.worker is None:
+            return False
 
         # don't do scale up again
         in_flights = [worker for worker in workers if worker.status == WorkerStatus.Inflight]
         if len(in_flights) > 0:
             return False
 
-        free_workers_count = 0
-        for worker in workers:
-            if worker.status == WorkerStatus.Free:
-                free_workers_count += 1
+        free_workers_count = factors.worker.get(WorkerStatus.Free, None) or 0
 
         return free_workers_count < min_free_workers
 

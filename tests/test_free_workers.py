@@ -16,7 +16,7 @@ def f2(b: BuiltinAutoScaler):
     ...
 
 
-class TestSimple(unittest.TestCase):
+class TestFreeWorkers(unittest.TestCase):
     def test_simple(self):
         s: BuiltinAutoScaler = FreeWorkerAutoScaler()
         f(s)
@@ -53,7 +53,10 @@ class TestSimple(unittest.TestCase):
             },
             workers=[
                 make_worker(status=WorkerStatus.Busy),
-            ]
+            ],
+            worker={
+                WorkerStatus.Busy: 1,
+            },
         ))
         self.assertEqual(1, len(result.actions))
         self.assertIsInstance(result.actions[0], ScaleUpAction)
@@ -73,7 +76,10 @@ class TestSimple(unittest.TestCase):
             workers=[
                 make_worker(status=WorkerStatus.Busy),
                 make_worker(status=WorkerStatus.Busy),
-            ]
+            ],
+            worker={
+                WorkerStatus.Busy: 2,
+            },
         ))
         self.assertEqual(1, len(result.actions))
         self.assertIsInstance(result.actions[0], ScaleUpAction)
@@ -94,7 +100,10 @@ class TestSimple(unittest.TestCase):
                 make_worker(status=WorkerStatus.Busy),
                 make_worker(status=WorkerStatus.Busy),
                 make_worker(status=WorkerStatus.Busy),
-            ]
+            ],
+            worker={
+                WorkerStatus.Busy: 3,
+            },
         ))
         self.assertEqual(0, len(result.actions))
 
@@ -117,7 +126,10 @@ class TestSimple(unittest.TestCase):
                 make_worker(status=WorkerStatus.Free),
                 make_worker(status=WorkerStatus.Free),
                 free_worker
-            ]
+            ],
+            worker = {
+                WorkerStatus.Free: 3,
+            },
         ))
         self.assertEqual(1, len(result.actions))
         self.assertIsInstance(result.actions[0], ScaleDownAction)
