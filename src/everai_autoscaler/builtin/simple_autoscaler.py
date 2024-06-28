@@ -39,12 +39,6 @@ class SimpleAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
                  scale_up_step: ArgumentType = 1,
                  decorators: typing.Optional[Decorators] = None,
                  ):
-        assert min_workers >= 0
-        assert max_workers >= min_workers
-        assert max_queue_size >= 0
-        assert max_idle_time > 0
-        assert scale_up_step > 0
-
         self.min_workers = min_workers if callable(min_workers) else int(min_workers)
         self.max_workers = max_workers if callable(max_workers) else int(max_workers)
         self.max_queue_size = max_queue_size if callable(max_queue_size) else int(max_queue_size)

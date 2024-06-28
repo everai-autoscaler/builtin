@@ -37,12 +37,6 @@ class FreeWorkerAutoScaler(BuiltinAutoScaler, BuiltinAutoscalerHelper):
                  scale_up_step: ArgumentType = 1,
                  decorators: typing.Optional[Decorators] = None,
                  ):
-        assert min_workers >= 0
-        assert max_workers >= min_workers
-        assert min_free_workers >= 0
-        assert max_idle_time > 0
-        assert scale_up_step > 0
-
         self.min_workers = min_workers if callable(min_workers) else int(min_workers)
         self.max_workers = max_workers if callable(max_workers) else int(max_workers)
         self.min_free_workers = min_free_workers if callable(min_free_workers) else int(min_free_workers)
