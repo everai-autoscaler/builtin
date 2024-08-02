@@ -16,6 +16,7 @@ def make_worker(
         number_of_failures: int = 0,
         number_of_sessions: int = 0,
         average_response_time: float = 0.3,
+        current_request: int = 0,
         status: WorkerStatus = WorkerStatus.Free) -> Worker:
     worker_id = worker_id or str(uuid.uuid4())
     now_timestamp = int(datetime.datetime.now().timestamp())
@@ -31,5 +32,6 @@ def make_worker(
         number_of_failures=number_of_failures,
         number_of_sessions=number_of_sessions,
         average_response_time=average_response_time,
+        current_request=current_request,
         status=status
     )

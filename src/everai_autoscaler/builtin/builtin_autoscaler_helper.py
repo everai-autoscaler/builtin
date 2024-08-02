@@ -88,7 +88,7 @@ class BuiltinAutoscalerHelper:
 
         running_workers = 0
         for worker in factors.workers:
-            if worker.status == WorkerStatus.Free:
+            if worker.status == WorkerStatus.Free or worker.status == WorkerStatus.Busy:
                 running_workers += 1
 
         # ensure after scale down, satisfied the min_workers
