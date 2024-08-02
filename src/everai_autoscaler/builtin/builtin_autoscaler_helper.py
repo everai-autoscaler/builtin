@@ -82,6 +82,7 @@ class BuiltinAutoscalerHelper:
         factors.workers.sort(key=lambda x: x.started_at, reverse=True)
         for worker in factors.workers:
             if (worker.number_of_sessions == 0 and worker.status == WorkerStatus.Free and
+                    worker.current_request == 0 and
                     now - worker.last_service_time >= max_idle_time):
                 scale_down_actions.append(ScaleDownAction(worker_id=worker.worker_id))
 
